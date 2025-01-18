@@ -15,8 +15,6 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
 public class BaseApiTest {
-
-
     private ObjectMapper objectMapper = new ObjectMapper();
     protected String token;
     protected String email;
@@ -25,7 +23,7 @@ public class BaseApiTest {
 
 
     @Before
-    public void setUp()  {
+    public void setUp() {
         RestAssured.baseURI = LINK_FOR_MAIN_PAGE;
         objectMapper = new ObjectMapper();
         Random random = new Random();

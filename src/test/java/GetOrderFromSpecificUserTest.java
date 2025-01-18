@@ -7,9 +7,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class GetOrderFromSpecificUserTest extends BaseApiTest {
-
-
-
     @Before
     public void prepare() throws Exception {
         createTestUser();

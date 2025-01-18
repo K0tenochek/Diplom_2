@@ -23,7 +23,7 @@ public class ChangeUserTest extends BaseApiTest {
                 .statusCode(DataConstants.HTTP_OK)
                 .extract().path("accessToken");
         Random random = new Random();
-        String newEmail = "t" + random.nextInt(120000) +  "@yandex.ru";
+        String newEmail = "t" + random.nextInt(120000) + "@yandex.ru";
         callChangeEmail(newEmail, currentToken)
                 .then()
                 .assertThat()
