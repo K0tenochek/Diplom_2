@@ -1,144 +1,70 @@
-import io.qameta.allure.internal.shadowed.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import request.RegistrationRequest;
 
-import java.util.Random;
-
-import static io.restassured.RestAssured.given;
+import static constants.DataConstants.*;
 import static org.hamcrest.Matchers.*;
 
-public class CreateOrderTest {
-    String token;
-    ObjectMapper objectMapper;
-    String email;
-    String password;
-    String name;
-
+public class CreateOrderTest extends BaseApiTest {
     @Before
-    public void setUp() throws Exception {
-        RestAssured.baseURI = "https://stellarburgers.nomoreparties.site";
-        objectMapper = new ObjectMapper();
-
-        Random random = new Random();
-        email = "test" + random.nextInt(120000) + "@yandex.ru";
-        name = "Tany";
-        password = "qwerty";
-        RegistrationRequest registrationRequest = new RegistrationRequest(name, email, password);
-        String jsonRegistration = objectMapper.writeValueAsString(registrationRequest);
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(jsonRegistration)
-                .post("/api/auth/register")
-                .then().log().all()
-                .assertThat()
-                .statusCode(200)
-                .body("user.email", equalTo(email))
-                .extract().response();
-        token = response.jsonPath().getString("accessToken");
+    public void prepare() throws Exception {
+        createTestUser();
     }
 
-
     @Test
-    public void createOrderWithAuthorization() {
-        String jsonLogin = "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .body(jsonLogin)
-                .post("/api/auth/login")
+    public void createOrderWithAuthorization() throws Exception {
+        token = callLogin(email, password)
                 .then()
                 .statusCode(200)
-                .log().all()
-                .body("accessToken", notNullValue());
+                .body(ACCESS_TOKEN, notNullValue())
+                .extract().path(ACCESS_TOKEN);
 
-        String ingredientId = "61c0c5a71d1f82001bdaaa70";
-        String orderBody = "{\"ingredients\": [\"" + ingredientId + "\"]}";
-
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .log().all()
-                .body(orderBody)
-                .post("/api/orders")
+        String orderBody = "{\"ingredients\": [\"" + INGREDIENT_ID_1 + "\"]}";
+        callCreateOrder(orderBody, token)
                 .then()
-                .statusCode(200)
-                .log().all()
-                .body("order.number", notNullValue());
+                .statusCode(HTTP_OK)
+                .body(ORDER_NUMBER, notNullValue());
     }
 
     @Test
     public void createOrderWithoutAuthorization() {
-        String ingredientId1 = "61c0c5a71d1f82001bdaaa70";
-        String ingredientId2 = "61c0c5a71d1f82001bdaaa72";
-        String orderBody = "{\"ingredients\": [\"" + ingredientId1 + "\", \"" + ingredientId2 + "\"]}";
+        String orderBody = "{\"ingredients\": [\"" + INGREDIENT_ID_1 + "\", \"" + INGREDIENT_ID_2 + "\"]}";
 
-        given()
-                .header("Content-type", "application/json")
-                .log().all()
-                .body(orderBody)
-                .post("/api/orders")
+        callCreateOrder(orderBody, null)
                 .then()
-                .statusCode(200)
-                .log().all()
-                .body("order.number", notNullValue());
+                .statusCode(HTTP_OK)
+                .body(ORDER_NUMBER, notNullValue());
     }
 
     @Test
-    public void createOrderWithoutIngredients() {
-        String jsonLogin = "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .body(jsonLogin)
-                .post("/api/auth/login")
+    public void createOrderWithoutIngredients() throws Exception {
+        token = callLogin(email, password)
                 .then()
                 .statusCode(200)
-                .log().all()
-                .body("accessToken", notNullValue());
+                .body(ACCESS_TOKEN, notNullValue())
+                .extract().path(ACCESS_TOKEN);
 
         String orderBody = "{\"ingredients\": []}";
 
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .log().all()
-                .body(orderBody)
-                .post("/api/orders")
+        callCreateOrder(orderBody, token)
                 .then()
-                .statusCode(400)
-                .log().all()
-                .body("message", equalTo("Ingredient ids must be provided"));
+                .statusCode(BAD_REQUEST)
+                .body(MESSAGE, equalTo(INGREDIENT_IDS_MUST_BE_PROVIDED));
     }
 
     @Test
-    public void createOrderWithInvalidHash() {
-        String ingredientId = "61c0c5a71d1f82001bdaaa70@";
-        String orderBody = "{\"ingredients\": [\"" + ingredientId + "\"]}";
+    public void createOrderWithInvalidHash() throws Exception {
+        String orderBody = "{\"ingredients\": [\"" + INVALID_INGREDIENT_ID + "\"]}";
 
-        given()
-                .header("Content-type", "application/json")
-                .log().all()
-                .body(orderBody)
-                .post("/api/orders")
+        token = callLogin(email, password)
                 .then()
-                .statusCode(500)
-                .log().all()
-                .body(containsString("Internal Server Error"));
-    }
+                .statusCode(HTTP_OK)
+                .body(ACCESS_TOKEN, notNullValue())
+                .extract().path(ACCESS_TOKEN);
 
-    @After
-    public void deleteUser() {
-        if (token != null) {
-            given()
-                    .header("Authorization", token)
-                    .delete("/api/auth/user")
-                    .then().log().all();
-        }
-    }
 
+        callCreateOrder(orderBody, token)
+                .then()
+                .statusCode(INTERNAL_SERVER_ERROR_CODE)
+                .body(containsString(INTERNAL_SERVER_ERROR));
+    }
 }

@@ -1,45 +1,25 @@
-import io.qameta.allure.internal.shadowed.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
+import constants.DataConstants;
 import io.restassured.response.Response;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import request.RegistrationRequest;
 
 import java.util.Random;
 
-import static io.restassured.RestAssured.given;
+import static constants.DataConstants.*;
 import static org.hamcrest.Matchers.equalTo;
 
-public class CreateUserTest {
-    String token;
-    ObjectMapper objectMapper = new ObjectMapper();
-    String password = "qwerty";
-    String name = "Tany";
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://stellarburgers.nomoreparties.site";
-    }
-
-
+public class CreateUserTest extends BaseApiTest {
     @Test
     public void createUniqueUser() throws Exception {
         Random random = new Random();
         String email = "test" + random.nextInt(120000) + "@yandex.ru";
-        RegistrationRequest registrationRequest = new RegistrationRequest(name, email, password);
-
-        String json = objectMapper.writeValueAsString(registrationRequest);
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(json)
-                .post("/api/auth/register")
-                .then().log().all()
+        Response response = callCreateUser(name, email, password)
+                .then()
+                .log().all()
                 .assertThat()
-                .statusCode(200)
-                .body("user.email", equalTo(email))
+                .statusCode(HTTP_OK)
+                .body(USER_EMAIL, equalTo(email))
                 .extract().response();
-        token = response.jsonPath().getString("accessToken");
+        token = response.jsonPath().getString(ACCESS_TOKEN);
 
     }
 
@@ -47,54 +27,29 @@ public class CreateUserTest {
     public void createTheSameUser() throws Exception {
         Random random = new Random();
         String email = "test" + random.nextInt(120000) + "@yandex.ru";
-        RegistrationRequest registrationRequest = new RegistrationRequest(name, email, password);
-        String json = objectMapper.writeValueAsString(registrationRequest);
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(json)
-                .post("/api/auth/register")
-                .then().log().all()
+        Response response = callCreateUser(name, email, password)
+                .then()
                 .assertThat()
-                .statusCode(200)
+                .statusCode(HTTP_OK)
                 .body("user.email", equalTo(email))
                 .extract().response();
-        token = response.jsonPath().getString("accessToken");
+        token = response.jsonPath().getString(ACCESS_TOKEN);
 
-        given()
-                .header("Content-type", "application/json")
-                .body(json)
-                .post("/api/auth/register")
-                .then().log().all()
+       callCreateUser(name, email, password)
+                .then()
                 .assertThat()
-                .statusCode(403)
-                .body("message", equalTo("User already exists"));
+                .statusCode(FORBIDDEN)
+                .body(DataConstants.MESSAGE, equalTo(USER_ALREADY_EXISTS));
     }
 
     @Test
     public void createUserWithMissingField() throws Exception {
         Random random = new Random();
         String email = "test" + random.nextInt(120000) + "@yandex.ru";
-        RegistrationRequest registrationRequest = new RegistrationRequest("", email, password);
-        String json = objectMapper.writeValueAsString(registrationRequest);
-
-        given()
-                .header("Content-type", "application/json")
-                .body(json)
-                .post("/api/auth/register")
-                .then().log().all()
+        callCreateUser("", email, password)
+                .then()
                 .assertThat()
-                .statusCode(403)
-                .body("message", equalTo("Email, password and name are required fields"));
-    }
-
-    @After
-    public void deleteUser() {
-        if (token != null) {
-            given()
-                    .header("Authorization", token)
-                    .delete("/api/auth/user")
-                    .then().log().all();
-        }
+                .statusCode(FORBIDDEN)
+                .body(DataConstants.MESSAGE, equalTo(REQUIRED_FIELDS_ERROR));
     }
 }

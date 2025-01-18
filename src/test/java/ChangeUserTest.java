@@ -1,125 +1,60 @@
-import io.qameta.allure.internal.shadowed.jackson.core.JsonProcessingException;
-import io.qameta.allure.internal.shadowed.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
-import org.junit.After;
+import constants.DataConstants;
 import org.junit.Before;
 import org.junit.Test;
-import request.AuthUserRequest;
-import request.RegistrationRequest;
 
 import java.util.Random;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
-public class ChangeUserTest {
-    String token;
-    String email;
-    String password;
-    ObjectMapper objectMapper;
+public class ChangeUserTest extends BaseApiTest {
+
+    public static final String YOU_SHOULD_BE_AUTHORISED = "You should be authorised";
 
     @Before
-    public void setUp() throws JsonProcessingException {
-        RestAssured.baseURI = "https://stellarburgers.nomoreparties.site";
-        objectMapper = new ObjectMapper();
-        Random random = new Random();
-        email = "test" + random.nextInt(120000) + "@yandex.ru";
-        String name = "Tany";
-        password = "qwerty";
-        RegistrationRequest registrationRequest = new RegistrationRequest(name, email, password);
-        String jsonRegistration = objectMapper.writeValueAsString(registrationRequest);
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(jsonRegistration)
-                .post("/api/auth/register")
-                .then().log().all()
-                .assertThat()
-                .statusCode(200)
-                .body("user.email", equalTo(email))
-                .extract().response();
-        token = response.jsonPath().getString("accessToken");
-
+    public void prepare() throws Exception {
+        createTestUser();
     }
 
     @Test
     public void loginAndChangeEmail() throws Exception {
-        AuthUserRequest authUserRequest = new AuthUserRequest(email, password);
-        String json = objectMapper.writeValueAsString(authUserRequest);
-        String currentToken = given()
-                .header("Content-type", "application/json")
-                .header("Authorization",  token)
-                .body(json)
-                .post("/api/auth/login")
-                .then().log().all()
+        String currentToken = callLogin(email, password)
+                .then()
                 .assertThat()
-                .statusCode(200)
+                .statusCode(DataConstants.HTTP_OK)
                 .extract().path("accessToken");
         Random random = new Random();
         String newEmail = "t" + random.nextInt(120000) +  "@yandex.ru";
-        String jsonChange = String.format("{\"email\": \"%s\"}", newEmail);
-
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization",  currentToken)
-                .body(jsonChange)
-                .patch("/api/auth/user")
-                .then().log().all()
+        callChangeEmail(newEmail, currentToken)
+                .then()
                 .assertThat()
-                .statusCode(200)
+                .statusCode(DataConstants.HTTP_OK)
                 .body("user.email", equalTo(newEmail));
     }
 
     @Test
     public void loginAndChangeName() throws Exception {
-        AuthUserRequest authUserRequest = new AuthUserRequest(email, password);
-        String json = objectMapper.writeValueAsString(authUserRequest);
-        String currentToken = given()
-                .header("Content-type", "application/json")
-                .header("Authorization",  token)
-                .body(json)
-                .post("/api/auth/login")
-                .then().log().all()
+        String currentToken = callLogin(email, password)
+                .then()
                 .assertThat()
-                .statusCode(200)
-                .extract().path("accessToken");
-        String name = "tanyusha";
-        String jsonChange = String.format("{\"name\": \"%s\"}", name);
-
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization",  currentToken)
-                .body(jsonChange)
-                .patch("/api/auth/user")
-                .then().log().all()
+                .statusCode(DataConstants.HTTP_OK)
+                .extract().path(DataConstants.ACCESS_TOKEN);
+        String newName = "tanyusha";
+        callChangeName(newName, currentToken)
+                .then()
                 .assertThat()
-                .statusCode(200)
-                .body("user.name", equalTo(name));
+                .statusCode(DataConstants.HTTP_OK)
+                .body("user.name", equalTo(newName));
     }
 
     @Test
-    public void changeDataUserWithoutAuthorization() {
-        String newName = "Slava";
-        String jsonChange = "{\"name\": \"" + newName + "\"}";
+    public void changeDataEmailWithoutAuthorization() {
+        String newEmail = "Slava@yandex.ru";
 
-        given()
-                .header("Content-type", "application/json")
-                .body(jsonChange)
-                .patch("/api/auth/user")
-                .then().log().all()
+        callChangeEmail(newEmail, null)
+                .then()
                 .assertThat()
-                .statusCode(401)
-                .body("message", equalTo("You should be authorised"));
+                .statusCode(DataConstants.UNAUTHORIZED)
+                .body(DataConstants.MESSAGE, equalTo(YOU_SHOULD_BE_AUTHORISED));
     }
 
-    @After
-    public void deleteUser() {
-        if (token != null) {
-            given()
-                    .header("Authorization", token)
-                    .delete("/api/auth/user")
-                    .then().log().all();
-        }
-    }
 }

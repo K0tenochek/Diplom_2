@@ -1,104 +1,58 @@
-import io.qameta.allure.internal.shadowed.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
-import org.junit.After;
+import constants.DataConstants;
 import org.junit.Before;
 import org.junit.Test;
-import request.RegistrationRequest;
 
-import java.util.Random;
+import static constants.DataConstants.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+public class GetOrderFromSpecificUserTest extends BaseApiTest {
 
-public class GetOrderFromSpecificUserTest {
-    String token;
-    ObjectMapper objectMapper;
-    String email;
-    String password;
-    String name;
+
 
     @Before
-    public void setUp() throws Exception {
-        RestAssured.baseURI = "https://stellarburgers.nomoreparties.site";
-        objectMapper = new ObjectMapper();
-
-        Random random = new Random();
-        email = "test" + random.nextInt(120000) + "@yandex.ru";
-        name = "Tany";
-        password = "qwerty";
-        RegistrationRequest registrationRequest = new RegistrationRequest(name, email, password);
-        String jsonRegistration = objectMapper.writeValueAsString(registrationRequest);
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(jsonRegistration)
-                .post("/api/auth/register")
-                .then().log().all()
-                .assertThat()
-                .statusCode(200)
-                .body("user.email", equalTo(email))
-                .extract().response();
-        token = response.jsonPath().getString("accessToken");
+    public void prepare() throws Exception {
+        createTestUser();
     }
 
     @Test
     public void getOrderFromUserWithoutAuthorization() {
-        given()
-                .header("Content-type", "application/json")
-                .log().all()
-                .get("/api/orders")
+        callGetOrder(null)
                 .then()
-                .statusCode(401)
-                .log().all()
-                .body("message", equalTo("You should be authorised"));
+                .statusCode(UNAUTHORIZED)
+                .body(DataConstants.MESSAGE, equalTo(UNAUTHORIZED_ERROR));
     }
 
     @Test
-    public void getOrderFromUserWithAuthorization() {
-        String jsonLogin = "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .body(jsonLogin)
-                .post("/api/auth/login")
+    public void getOrderFromUserWithAuthorization() throws Exception {
+        callLogin(email, password)
                 .then()
                 .statusCode(200)
-                .log().all()
-                .body("accessToken", notNullValue());
+                .body(ACCESS_TOKEN, notNullValue());
 
-        String ingredientId = "61c0c5a71d1f82001bdaaa70";
-        String orderBody = "{\"ingredients\": [\"" + ingredientId + "\"]}";
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .log().all()
-                .body(orderBody)
-                .post("/api/orders")
+       callGetOrder(token)
                 .then()
                 .statusCode(200)
-                .log().all()
-                .body("order.number", notNullValue());
-
-        given()
-                .header("Content-type", "application/json")
-                .header("Authorization", token)
-                .log().all()
-                .get("/api/orders")
-                .then()
-                .statusCode(200)
-                .log().all()
-                .body("orders.size()", greaterThan(0));
+                .body("orders.size()", equalTo(0));
     }
 
-    @After
-    public void deleteUser() {
-        if (token != null) {
-            given()
-                    .header("Authorization", token)
-                    .delete("/api/auth/user")
-                    .then().log().all();
-        }
+    @Test
+    public void createAndGetOrderFromUserWithAuthorization() throws Exception {
+        callLogin(email, password)
+                .then()
+                .statusCode(200)
+                .body(ACCESS_TOKEN, notNullValue());
+
+        String orderBody = "{\"ingredients\": [\"" + DataConstants.INGREDIENT_ID_1 + "\"]}";
+        callCreateOrder(orderBody, token)
+                .then()
+                .statusCode(HTTP_OK)
+                .body(DataConstants.ORDER_NUMBER, notNullValue());
+
+        callGetOrder(token)
+                .then()
+                .statusCode(HTTP_OK)
+                .body(ORDERS_SIZE, equalTo(1));
     }
 
 }
