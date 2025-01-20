@@ -1,4 +1,5 @@
 import constants.DataConstants;
+import io.qameta.allure.Description;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,6 +17,7 @@ public class ChangeUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Изменение email с авторизацией")
     public void loginAndChangeEmail() throws Exception {
         String currentToken = callLogin(email, password)
                 .then()
@@ -32,6 +34,7 @@ public class ChangeUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Изменение имени с авторизацией")
     public void loginAndChangeName() throws Exception {
         String currentToken = callLogin(email, password)
                 .then()
@@ -47,6 +50,7 @@ public class ChangeUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Изменение email без авторизаци")
     public void changeDataEmailWithoutAuthorization() {
         String newEmail = "Slava@yandex.ru";
 

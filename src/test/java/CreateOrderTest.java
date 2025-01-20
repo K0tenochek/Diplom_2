@@ -1,5 +1,10 @@
+import io.qameta.allure.Description;
+import io.restassured.response.Response;
 import org.junit.Before;
 import org.junit.Test;
+import request.CreateOrderRequest;
+
+import java.util.List;
 
 import static constants.DataConstants.*;
 import static org.hamcrest.Matchers.*;
@@ -11,6 +16,7 @@ public class CreateOrderTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Создание заказа с авторизацией")
     public void createOrderWithAuthorization() throws Exception {
         token = callLogin(email, password)
                 .then()
@@ -18,7 +24,10 @@ public class CreateOrderTest extends BaseApiTest {
                 .body(ACCESS_TOKEN, notNullValue())
                 .extract().path(ACCESS_TOKEN);
 
-        String orderBody = "{\"ingredients\": [\"" + INGREDIENT_ID_1 + "\"]}";
+        Response response = callGetIngredients();
+        String ingredientId1 = response.path("data[0]._id");
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(List.of(ingredientId1));
+        String orderBody = objectMapper.writeValueAsString(createOrderRequest);
         callCreateOrder(orderBody, token)
                 .then()
                 .statusCode(HTTP_OK)
@@ -26,9 +35,13 @@ public class CreateOrderTest extends BaseApiTest {
     }
 
     @Test
-    public void createOrderWithoutAuthorization() {
-        String orderBody = "{\"ingredients\": [\"" + INGREDIENT_ID_1 + "\", \"" + INGREDIENT_ID_2 + "\"]}";
-
+    @Description("Создание заказа без авторизации")
+    public void createOrderWithoutAuthorization() throws Exception {
+        Response response = callGetIngredients();
+        String ingredientId1 = response.path("data[0]._id");
+        String ingredientId2 = response.path("data[1]._id");
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(List.of(ingredientId1, ingredientId2));
+        String orderBody = objectMapper.writeValueAsString(createOrderRequest);
         callCreateOrder(orderBody, null)
                 .then()
                 .statusCode(HTTP_OK)
@@ -36,6 +49,7 @@ public class CreateOrderTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Создание заказа без ингредиентов")
     public void createOrderWithoutIngredients() throws Exception {
         token = callLogin(email, password)
                 .then()
@@ -43,8 +57,8 @@ public class CreateOrderTest extends BaseApiTest {
                 .body(ACCESS_TOKEN, notNullValue())
                 .extract().path(ACCESS_TOKEN);
 
-        String orderBody = "{\"ingredients\": []}";
-
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(List.of());
+        String orderBody = objectMapper.writeValueAsString(createOrderRequest);
         callCreateOrder(orderBody, token)
                 .then()
                 .statusCode(BAD_REQUEST)
@@ -52,6 +66,7 @@ public class CreateOrderTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Создание заказа с неверным хешем ингредиентов")
     public void createOrderWithInvalidHash() throws Exception {
         String orderBody = "{\"ingredients\": [\"" + INVALID_INGREDIENT_ID + "\"]}";
 

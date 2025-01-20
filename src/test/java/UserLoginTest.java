@@ -1,3 +1,4 @@
+import io.qameta.allure.Description;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -12,6 +13,7 @@ public class UserLoginTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Авторизация пользователя")
     public void authorizationUser() throws Exception {
         callLogin(email, password)
                 .then()
@@ -20,6 +22,7 @@ public class UserLoginTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Авторизация пользователя с некорректным email")
     public void authorizationUserWithIncorrectLogin() throws Exception{
         callLogin(INCORRECT_EMAIL, password)
                 .then()
@@ -28,6 +31,7 @@ public class UserLoginTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Авторизация пользователя с некорректным паролем")
     public void authorizationUserWithIncorrectPassword() throws Exception {
         callLogin(email, INCORRECT_PASSWORD)
                 .then()

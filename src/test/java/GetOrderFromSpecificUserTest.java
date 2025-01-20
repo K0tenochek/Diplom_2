@@ -1,6 +1,11 @@
 import constants.DataConstants;
+import io.qameta.allure.Description;
+import io.restassured.response.Response;
 import org.junit.Before;
 import org.junit.Test;
+import request.CreateOrderRequest;
+
+import java.util.List;
 
 import static constants.DataConstants.*;
 import static org.hamcrest.Matchers.equalTo;
@@ -13,6 +18,7 @@ public class GetOrderFromSpecificUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Получение заказа от неавторизованного пользователя")
     public void getOrderFromUserWithoutAuthorization() {
         callGetOrder(null)
                 .then()
@@ -21,6 +27,7 @@ public class GetOrderFromSpecificUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Получение заказа от авторизованного пользователя")
     public void getOrderFromUserWithAuthorization() throws Exception {
         callLogin(email, password)
                 .then()
@@ -34,14 +41,18 @@ public class GetOrderFromSpecificUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Создание и получение заказа от авторизованного пользователя")
     public void createAndGetOrderFromUserWithAuthorization() throws Exception {
         callLogin(email, password)
                 .then()
                 .statusCode(200)
                 .body(ACCESS_TOKEN, notNullValue());
 
-        String orderBody = "{\"ingredients\": [\"" + DataConstants.INGREDIENT_ID_1 + "\"]}";
-        callCreateOrder(orderBody, token)
+        Response response = callGetIngredients();
+        String ingredientId1 = response.path("data[0]._id");
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(List.of(ingredientId1));
+        String body = objectMapper.writeValueAsString(createOrderRequest);
+        callCreateOrder(body, token)
                 .then()
                 .statusCode(HTTP_OK)
                 .body(DataConstants.ORDER_NUMBER, notNullValue());

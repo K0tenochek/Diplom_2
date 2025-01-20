@@ -6,9 +6,8 @@ public class DataConstants {
     public static final String API_ORDERS = "/api/orders";
     public static final String API_AUTH_LOGIN = "/api/auth/login";
     public static final String API_AUTH_USER = "/api/auth/user";
+    public static final String API_INGREDIENTS = "api/ingredients";
 
-    public static final String INGREDIENT_ID_1 = "61c0c5a71d1f82001bdaaa70";
-    public static final String INGREDIENT_ID_2 = "61c0c5a71d1f82001bdaaa72";
     public static final String INVALID_INGREDIENT_ID = "61c0c5a71d1f82001bdaaa70@";
 
     public static final String ORDER_NUMBER = "order.number";

@@ -1,9 +1,9 @@
 package request;
 
 public class RegistrationRequest {
-    String name;
-    String email;
-    String password;
+    private String name;
+    private String email;
+    private String password;
 
     public RegistrationRequest(String name, String email, String password) {
         this.name = name;

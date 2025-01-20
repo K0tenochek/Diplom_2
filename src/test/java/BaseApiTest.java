@@ -15,7 +15,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
 public class BaseApiTest {
-    private ObjectMapper objectMapper = new ObjectMapper();
+    protected ObjectMapper objectMapper = new ObjectMapper();
     protected String token;
     protected String email;
     protected String password = "qwerty";
@@ -113,6 +113,13 @@ public class BaseApiTest {
                 .header(CONTENT_TYPE, APPLICATION_JSON)
                 .body(json)
                 .post(API_AUTH_REGISTER);
+    }
+
+    @Step("Получение доступных ингредиентов")
+    protected Response callGetIngredients() {
+        return given()
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .get(API_INGREDIENTS);
     }
 
     @After

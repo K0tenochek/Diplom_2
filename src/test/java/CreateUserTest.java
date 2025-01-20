@@ -1,4 +1,5 @@
 import constants.DataConstants;
+import io.qameta.allure.Description;
 import io.restassured.response.Response;
 import org.junit.Test;
 
@@ -9,6 +10,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class CreateUserTest extends BaseApiTest {
     @Test
+    @Description("Создание уникального пользователя")
     public void createUniqueUser() throws Exception {
         Random random = new Random();
         String email = "test" + random.nextInt(120000) + "@yandex.ru";
@@ -24,6 +26,7 @@ public class CreateUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Создание пользователя, который уже зарегистрирован")
     public void createTheSameUser() throws Exception {
         Random random = new Random();
         String email = "test" + random.nextInt(120000) + "@yandex.ru";
@@ -43,6 +46,7 @@ public class CreateUserTest extends BaseApiTest {
     }
 
     @Test
+    @Description("Создание пользователя с незаполнением одного из обязательных полей")
     public void createUserWithMissingField() throws Exception {
         Random random = new Random();
         String email = "test" + random.nextInt(120000) + "@yandex.ru";
